@@ -17,6 +17,7 @@ fn get_lenght() -> usize {
     let lenght: usize = lenght.trim().parse().unwrap();
     lenght
 }
+
 fn main() -> std::io::Result<()> {
     let lenght = get_lenght();
     let mut i = 0;
@@ -43,7 +44,14 @@ fn main() -> std::io::Result<()> {
 
         //odbieramy dane
         let mut reader = BufReader::new(connect);
-        reader.read_to_end(&mut buffer)?;
+        let mut response = Vec::new();
+        reader.read_to_end(&mut response)?;
+
+        if let Some(pos) = response.windows(4).position(|w| w == b"\r\n\r\n") {
+            let body_start = pos + 4;
+            let body = &response[body_start..];
+            buffer.extend_from_slice(body);
+        }
         i = i + 1;
         println!("Obecnie: {}", buffer.len());
         }
@@ -52,6 +60,5 @@ fn main() -> std::io::Result<()> {
         hasher.update(&buffer);
         let result = hasher.finalize();
         println!("{:x}", result);
-
     Ok(())
 }
