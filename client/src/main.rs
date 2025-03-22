@@ -1,6 +1,7 @@
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpStream;
 use std::thread;
+use sha2::{Sha256, Digest};
 
 fn connect_to_server(host: &str, port: &str) -> std::io::Result<TcpStream> {
     let addr = format!("{}:{}", host, port);
@@ -18,27 +19,39 @@ fn get_lenght() -> usize {
 }
 fn main() -> std::io::Result<()> {
     let lenght = get_lenght();
-
+    let mut i = 0;
     let host = "127.0.0.1";
     let port = "8080";
 
-    let range_start = 0;
-    let range_end = 9999;
+    let mut buffer: Vec<u8> = Vec::new();
 
-    let mut buffer = vec![0 as u8; lenght];
+    while buffer.len() < lenght {
+        let mut connect = connect_to_server(&host, &port)?;
+        let request = format!(
+            "GET / HTTP/1.1\r\n\
+             Host: {host}:{port}\r\n\
+             Range: bytes={}-{}\r\n\
+             Connection: close\r\n\
+             \r\n",
+            buffer.len(),
+            buffer.len() + 9999
+        );        
 
-    // Łączenie z serwerem
-    let mut connect = connect_to_server(&host, &port)?;
-    println!("Połączono z serwerem");
-    let request = format!("GET /range/{}-{} HTTP/1.0\r\n\r\n", range_start, range_end);
+        //wysyłanie żądania
+        connect.write_all(request.as_bytes())?;
+        println!("Wysłano żądanie {}", i);
 
-    //wysyłanie żądania
-    connect.write_all(request.as_bytes())?;
-    println!("Wysłano żądanie");
+        //odbieramy dane
+        let mut reader = BufReader::new(connect);
+        reader.read_to_end(&mut buffer)?;
+        i = i + 1;
+        println!("Obecnie: {}", buffer.len());
+        }
+        println!("Everything allright"); 
+        let mut hasher = Sha256::new();
+        hasher.update(&buffer);
+        let result = hasher.finalize();
+        println!("{:x}", result);
 
-    //odbieramy dane
-    let mut reader = BufReader::new(connect);
-    reader.read_to_end(&mut buffer)?;
-    println!("Odebrano dane");
     Ok(())
 }
