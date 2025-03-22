@@ -1,12 +1,11 @@
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufReader, Read, Write};
 use std::net::TcpStream;
-use std::thread;
 use sha2::{Sha256, Digest};
 
 fn connect_to_server(host: &str, port: &str) -> std::io::Result<TcpStream> {
     let addr = format!("{}:{}", host, port);
-    let mut stream = TcpStream::connect(addr)?;
-    Ok((stream))
+    let stream = TcpStream::connect(addr)?;
+    Ok(stream)
 }
 
 
@@ -15,12 +14,11 @@ fn get_lenght() -> usize {
     let mut lenght = String::new();
     std::io::stdin().read_line(&mut lenght).unwrap();
     let lenght: usize = lenght.trim().parse().unwrap();
-    lenght
+    return lenght
 }
 
 fn main() -> std::io::Result<()> {
     let lenght = get_lenght();
-    let mut i = 0;
     let host = "127.0.0.1";
     let port = "8080";
 
@@ -38,27 +36,29 @@ fn main() -> std::io::Result<()> {
             buffer.len() + 9999
         );        
 
-        //wysyłanie żądania
         connect.write_all(request.as_bytes())?;
-        println!("Wysłano żądanie {}", i);
 
-        //odbieramy dane
         let mut reader = BufReader::new(connect);
         let mut response = Vec::new();
         reader.read_to_end(&mut response)?;
 
-        if let Some(pos) = response.windows(4).position(|w| w == b"\r\n\r\n") {
-            let body_start = pos + 4;
-            let body = &response[body_start..];
-            buffer.extend_from_slice(body);
+        match response.windows(4).position(|w| w == b"\r\n\r\n") {
+            Some(pos) => {
+                let body_start = pos + 4;
+                let body = &response[body_start..];
+                buffer.extend_from_slice(body);
+            },
+            None => {
+                eprintln!("No end of headers found");
+                break;
+            }
         }
-        i = i + 1;
-        println!("Obecnie: {}", buffer.len());
-        }
-        println!("Everything allright"); 
-        let mut hasher = Sha256::new();
-        hasher.update(&buffer);
-        let result = hasher.finalize();
-        println!("{:x}", result);
+    }
+
+    let mut hasher = Sha256::new();
+    hasher.update(&buffer);
+    let result = hasher.finalize();
+    println!("{:x}", result);
+
     Ok(())
 }
