@@ -1,0 +1,46 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[polish]{babel}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{mathtools}
+
+\title{Internship JetBrains task documentation}
+\author{Wojciech Typer}
+\date{}
+
+\begin{document}
+\maketitle
+
+\textbf{Effective file transfer between machines for remote development}
+
+\section*{Overview}
+This Rust program connects to a local HTTP server and continuously downloads data in chunks until it collects a user-specified number of bytes. After retrieving the full content, it computes and prints its SHA-256 hash.
+
+\section*{Functionality}
+
+\begin{itemize}
+    \item Prompts the user for the total number of bytes to download.
+    \item Connects to a server at \texttt{127.0.0.1:8080}.
+    \item Sends HTTP \texttt{Range} requests to fetch data in 10\,000-byte segments.
+    \item Extracts the HTTP response body from the received data.
+    \item Appends the data to a buffer until the expected length is reached.
+    \item Computes the SHA-256 hash of the resulting buffer.
+    \item Prints the hash as a hexadecimal string.
+\end{itemize}
+
+\section*{Implementation Details}
+
+\begin{itemize}
+    \item The program uses \texttt{TcpStream} to send raw HTTP requests and receive responses.
+    \item To extract the response body, it searches for the HTTP header terminator sequence \texttt{\textbackslash r\textbackslash n\textbackslash r\textbackslash n}.
+    \item The hash is calculated using the \texttt{sha2} crate.
+\end{itemize}
+\end{document}
